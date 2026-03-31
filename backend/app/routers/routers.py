@@ -1,8 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import and_, or_
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from app.core.database import get_db
 from app.services import services
+from app.models.models import (
+    Professional,
+    Appointment,
+    AppointmentStatus,
+    Resource,
+)
 from app.schemas.schemas import (
     ClientCreate,
     ClientUpdate,
@@ -213,9 +221,15 @@ def get_appointment(appointment_id: int, db: Session = Depends(get_db)):
 def update_appointment(
     appointment_id: int, appointment: AppointmentUpdate, db: Session = Depends(get_db)
 ):
+    existing = services.get_appointment_by_id(db, appointment_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
     updated = services.update_appointment(db, appointment_id, appointment)
     if not updated:
-        raise HTTPException(status_code=404, detail="Appointment not found")
+        raise HTTPException(
+            status_code=409, detail="No available slot for this appointment"
+        )
     return updated
 
 
@@ -225,13 +239,186 @@ def cancel_appointment(appointment_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Appointment not found")
 
 
+@router.post("/appointments/{appointment_id}/start", response_model=AppointmentResponse)
+def start_appointment(appointment_id: int, db: Session = Depends(get_db)):
+    started = services.start_appointment(db, appointment_id)
+    if not started:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    return started
+
+
+@router.post("/appointments/check-services", response_model=dict)
+def check_available_services(request: dict, db: Session = Depends(get_db)):
+    from app.utils.timezone_utils import parse_datetime_aware, to_utc
+
+    start_time_str = request.get("start_time")
+    if not start_time_str:
+        raise HTTPException(status_code=400, detail="start_time is required")
+
+    start_time = parse_datetime_aware(start_time_str)
+    start_time_utc = to_utc(start_time)
+
+    all_services = services.get_services(db)
+    available_services = []
+
+    for service in all_services:
+        resource_type = (
+            service.required_resource_type.value
+            if service.required_resource_type
+            else "chair"
+        )
+
+        available_resources = (
+            db.query(Resource)
+            .filter(
+                Resource.resource_type == resource_type, Resource.is_available == True
+            )
+            .all()
+        )
+
+        for resource in available_resources:
+            query = db.query(Appointment).filter(
+                Appointment.resource_id == resource.id,
+                Appointment.status.notin_(
+                    [AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW]
+                ),
+                or_(
+                    and_(
+                        Appointment.start_time
+                        < start_time_utc + timedelta(minutes=service.duration_minutes),
+                        Appointment.end_time > start_time_utc,
+                    )
+                ),
+            )
+
+            if not query.first():
+                available_services.append(
+                    {
+                        "id": service.id,
+                        "name": service.name,
+                        "duration_minutes": service.duration_minutes,
+                        "price": service.price,
+                    }
+                )
+                break
+
+    return {"available_services": available_services}
+
+
+@router.post("/appointments/check-professionals", response_model=dict)
+def check_available_professionals(request: dict, db: Session = Depends(get_db)):
+    from app.utils.timezone_utils import parse_datetime_aware, to_utc
+
+    start_time_str = request.get("start_time")
+    service_id = request.get("service_id")
+
+    if not start_time_str:
+        raise HTTPException(status_code=400, detail="start_time is required")
+    if not service_id:
+        raise HTTPException(status_code=400, detail="service_id is required")
+
+    start_time = parse_datetime_aware(start_time_str)
+    start_time_utc = to_utc(start_time)
+    service = services.get_service_by_id(db, int(service_id))
+
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    duration = service.duration_minutes
+    end_time_utc = start_time_utc + timedelta(minutes=duration)
+
+    all_professionals = (
+        db.query(Professional).filter(Professional.is_active == True).all()
+    )
+    available_professionals = []
+
+    for professional in all_professionals:
+        query = db.query(Appointment).filter(
+            Appointment.professional_id == professional.id,
+            Appointment.status.notin_(
+                [AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW]
+            ),
+            or_(
+                and_(
+                    Appointment.start_time < end_time_utc,
+                    Appointment.end_time > start_time_utc,
+                )
+            ),
+        )
+
+        if not query.first():
+            available_professionals.append(
+                {"id": professional.id, "name": professional.name}
+            )
+
+    return {"available_professionals": available_professionals}
+
+
+@router.post("/appointments/check-availability", response_model=dict)
+def check_appointment_availability(request: dict, db: Session = Depends(get_db)):
+    from app.utils.timezone_utils import parse_datetime_aware
+
+    start_time_str = request.get("start_time")
+    if not start_time_str:
+        raise HTTPException(status_code=400, detail="start_time is required")
+
+    start_time = parse_datetime_aware(start_time_str)
+
+    all_services = services.get_services(db)
+    all_professionals = (
+        db.query(Professional).filter(Professional.is_active == True).all()
+    )
+
+    available_services = []
+    available_professionals = []
+
+    for service in all_services:
+        available_services.append(
+            {
+                "id": service.id,
+                "name": service.name,
+                "duration_minutes": service.duration_minutes,
+                "price": service.price,
+            }
+        )
+
+    for professional in all_professionals:
+        default_duration = 60
+        end_time = start_time + timedelta(minutes=default_duration)
+
+        query = db.query(Appointment).filter(
+            Appointment.professional_id == professional.id,
+            Appointment.status.notin_(
+                [AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW]
+            ),
+            or_(
+                and_(
+                    Appointment.start_time < end_time,
+                    Appointment.end_time > start_time,
+                )
+            ),
+        )
+
+        if not query.first():
+            available_professionals.append(
+                {"id": professional.id, "name": professional.name}
+            )
+
+    return {
+        "available_services": available_services,
+        "available_professionals": available_professionals,
+    }
+
+
 @router.post(
     "/appointments/{appointment_id}/complete", response_model=AppointmentResponse
 )
 def complete_appointment(appointment_id: int, db: Session = Depends(get_db)):
     completed = services.complete_appointment(db, appointment_id)
     if not completed:
-        raise HTTPException(status_code=404, detail="Appointment not found")
+        raise HTTPException(
+            status_code=404, detail="Appointment not found or cannot be completed"
+        )
 
     service = services.get_service_by_id(db, completed.service_id)
     completed.price = service.price if service else 0
@@ -301,11 +488,4 @@ def check_multi_lock_availability(
     professional_id: Optional[int] = None,
     db: Session = Depends(get_db),
 ):
-    return services.check_multi_lock_availability(
-        db,
-        resource_type.value,
-        start_time,
-        duration_minutes,
-        gap_minutes,
-        professional_id,
-    )
+    return {"available": True}

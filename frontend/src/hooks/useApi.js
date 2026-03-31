@@ -43,7 +43,11 @@ export const appointmentsApi = {
   create: (data) => api.post('/appointments', data),
   update: (id, data) => api.put(`/appointments/${id}`, data),
   delete: (id) => api.delete(`/appointments/${id}`),
-  complete: (id) => api.post(`/appointments/${id}/complete`)
+  start: (id) => api.post(`/appointments/${id}/start`),
+  complete: (id) => api.post(`/appointments/${id}/complete`),
+  checkServices: (data) => api.post('/appointments/check-services', data),
+  checkProfessionals: (data) => api.post('/appointments/check-professionals', data),
+  checkAvailability: (data) => api.post('/appointments/check-availability', data)
 };
 
 export const availabilityApi = {

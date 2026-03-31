@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { clientsApi, appointmentsApi, servicesApi, resourcesApi, professionalsApi } from '../hooks/useApi';
-import { Users, Calendar, Scissors, TrendingUp, Eye, X } from 'lucide-react';
+import { Users, Calendar, Scissors, TrendingUp, X } from 'lucide-react';
+import { formatDateTime, formatTime, formatDate } from '../utils/dateUtils';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ clients: 0, appointments: 0, services: 0, sales: 0 });
+  const [stats, setStats] = useState({ clients: 0, appointments: 0, services: 0, sales: 0, pendingCount: 0, inProgressCount: 0 });
   const [recentAppointments, setRecentAppointments] = useState([]);
   const [servicesMap, setServicesMap] = useState({});
   const [clientsMap, setClientsMap] = useState({});
@@ -11,6 +12,11 @@ export default function Dashboard() {
   const [resourcesMap, setResourcesMap] = useState({});
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailAppointment, setDetailAppointment] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(formatDate(new Date().toISOString()));
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const today = formatDate(new Date().toISOString());
+  const isToday = selectedDate === today;
 
   useEffect(() => {
     Promise.all([
@@ -36,15 +42,53 @@ export default function Dashboard() {
         return sum + (service ? service.price : 0);
       }, 0);
       
+      const todayAppointments = appointmentsRes.data.filter(a => {
+        const aptDate = formatDate(a.start_time);
+        return aptDate === today;
+      });
+      
+      const pendingCount = todayAppointments.filter(a => a.status === 'pending').length;
+      const inProgressCount = todayAppointments.filter(a => a.status === 'in_progress').length;
+      
       setStats({
         clients: clientsRes.data.length,
-        appointments: appointmentsRes.data.length,
+        appointments: pendingCount + inProgressCount,
         services: servicesRes.data.length,
-        sales: totalSales
+        sales: totalSales,
+        pendingCount,
+        inProgressCount
       });
-      setRecentAppointments(appointmentsRes.data.slice(0, 5));
     }).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    appointmentsApi.getAll().then(res => {
+      const filtered = res.data.filter(apt => {
+        const aptDate = formatDate(apt.start_time);
+        const isActive = apt.status === 'pending' || apt.status === 'in_progress';
+        return isActive && aptDate === selectedDate;
+      });
+      setRecentAppointments(filtered);
+      
+      const pendingCount = filtered.filter(a => a.status === 'pending').length;
+      const inProgressCount = filtered.filter(a => a.status === 'in_progress').length;
+      setStats(prev => ({ ...prev, appointments: filtered.length, pendingCount, inProgressCount }));
+    }).catch(console.error);
+  }, [selectedDate]);
+
+  const handleDateChange = (e) => {
+    const newDateStr = e.target.value;
+    const parts = newDateStr.split('-');
+    const newDate = new Date(parts[0], parts[1] - 1, parts[2]);
+    setSelectedDate(formatDate(newDate.toISOString()));
+  };
+
+  const parseDateForInput = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return '';
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  };
 
   const handleViewDetail = (apt) => {
     setDetailAppointment(apt);
@@ -54,6 +98,7 @@ export default function Dashboard() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'in_progress': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       case 'confirmed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
@@ -61,9 +106,27 @@ export default function Dashboard() {
     }
   };
 
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'completed': return 'Completado';
+      case 'in_progress': return 'En curso';
+      case 'pending': return 'Pendiente';
+      case 'confirmed': return 'Confirmado';
+      case 'cancelled': return 'Cancelado';
+      default: return status;
+    }
+  };
+
   const cards = [
     { title: 'Clientes', value: stats.clients, icon: Users, color: 'text-blue-500' },
-    { title: 'Turnos', value: stats.appointments, icon: Calendar, color: 'text-green-500' },
+    { 
+      title: 'Turnos', 
+      pendingValue: stats.pendingCount, 
+      inProgressValue: stats.inProgressCount, 
+      icon: Calendar, 
+      color: isToday ? 'text-green-500' : 'text-orange-500', 
+      onClick: () => setShowDatePicker(!showDatePicker) 
+    },
     { title: 'Servicios', value: stats.services, icon: Scissors, color: 'text-purple-500' },
     { title: 'Ventas', value: `$${stats.sales.toLocaleString('es-AR')}`, icon: TrendingUp, color: 'text-[var(--color-accent)]' },
   ];
@@ -73,11 +136,25 @@ export default function Dashboard() {
       <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {cards.map(card => (
-          <div key={card.title} className="card p-6">
+          <div 
+            key={card.title} 
+            className={`card p-6 ${card.onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+            onClick={card.onClick}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-[var(--color-text-secondary)]">{card.title}</p>
-                <p className="text-2xl font-bold mt-1">{card.value}</p>
+                {card.value !== undefined && <p className="text-2xl font-bold mt-1">{card.value}</p>}
+                {card.pendingValue !== undefined && (
+                  <>
+                    <p className="text-sm mt-1">
+                      Pendientes: <span className="font-bold text-yellow-700 dark:text-yellow-300">{card.pendingValue}</span>
+                    </p>
+                    <p className="text-sm">
+                      En curso: <span className="font-bold text-blue-700 dark:text-blue-300">{card.inProgressValue}</span>
+                    </p>
+                  </>
+                )}
               </div>
               <card.icon className={`w-8 h-8 ${card.color}`} />
             </div>
@@ -85,8 +162,23 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {showDatePicker && (
+        <div className="mb-4 p-4 bg-[var(--color-card)] rounded-lg border border-[var(--color-border)]">
+          <label className="block text-sm font-medium mb-2">Seleccionar fecha:</label>
+          <input 
+            type="date" 
+            onChange={handleDateChange}
+            className="p-2 border rounded-lg bg-[var(--color-bg)] text-[var(--color-text)]"
+            value={parseDateForInput(selectedDate)}
+          />
+          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+            Mostrando turnos de: {selectedDate}
+          </p>
+        </div>
+      )}
+
       <div className="card p-6">
-        <h2 className="text-xl font-semibold mb-4">Turnos Recientes</h2>
+        <h2 className="text-xl font-semibold mb-4">Turnos del Día</h2>
         {recentAppointments.length === 0 ? (
           <p className="text-[var(--color-text-secondary)]">No hay turnos registrados</p>
         ) : (
@@ -98,13 +190,16 @@ export default function Dashboard() {
                 className="flex items-center justify-between p-3 bg-[var(--color-bg)] rounded-lg cursor-pointer hover:bg-[var(--color-border)] transition-colors"
               >
                 <div>
-                  <p className="font-medium">Turno #{apt.id}</p>
+                  <p className="font-medium">{servicesMap[apt.service_id]?.name || `Servicio ${apt.service_id}`}</p>
                   <p className="text-sm text-[var(--color-text-secondary)]">
-                    {new Date(apt.start_time).toLocaleDateString('es-AR')}
+                    {formatTime(apt.start_time).split(' ')[0]}
+                  </p>
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    {formatTime(apt.start_time).split(' ')[1]} - {formatTime(apt.end_time).split(' ')[1]}
                   </p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs ${getStatusColor(apt.status)}`}>
-                  {apt.status}
+                  {getStatusLabel(apt.status)}
                 </span>
               </div>
             ))}
@@ -129,31 +224,31 @@ export default function Dashboard() {
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--color-text-secondary)]">Cliente:</span>
-                <span className="font-medium">{clientsMap[detailAppointment.client_id]?.name || detailAppointment.client_id}</span>
+                <span className="font-medium">{clientsMap[detailAppointment.client_id]?.name || `Cliente ${detailAppointment.client_id}`}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--color-text-secondary)]">Servicio:</span>
-                <span className="font-medium">{servicesMap[detailAppointment.service_id]?.name || detailAppointment.service_id}</span>
+                <span className="font-medium">{servicesMap[detailAppointment.service_id]?.name || `Servicio ${detailAppointment.service_id}`}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--color-text-secondary)]">Profesional:</span>
-                <span className="font-medium">{professionalsMap[detailAppointment.professional_id]?.name || detailAppointment.professional_id}</span>
+                <span className="font-medium">{professionalsMap[detailAppointment.professional_id]?.name || `Profesional ${detailAppointment.professional_id}`}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--color-text-secondary)]">Recurso:</span>
-                <span className="font-medium">{resourcesMap[detailAppointment.resource_id]?.name || detailAppointment.resource_id}</span>
+                <span className="font-medium">{resourcesMap[detailAppointment.resource_id]?.name || `Recurso ${detailAppointment.resource_id}`}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[var(--color-text-secondary)]">Fecha Inicio:</span>
-                <span className="font-medium">{new Date(detailAppointment.start_time).toLocaleString('es-AR')}</span>
+                <span className="text-[var(--color-text-secondary)]">Fecha:</span>
+                <span className="font-medium">{formatTime(detailAppointment.start_time).split(' ')[0]}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[var(--color-text-secondary)]">Fecha Fin:</span>
-                <span className="font-medium">{new Date(detailAppointment.end_time).toLocaleString('es-AR')}</span>
+                <span className="text-[var(--color-text-secondary)]">Horario:</span>
+                <span className="font-medium">{formatTime(detailAppointment.start_time).split(' ')[1]} - {formatTime(detailAppointment.end_time).split(' ')[1]}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--color-text-secondary)]">Estado:</span>
-                <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(detailAppointment.status)}`}>{detailAppointment.status}</span>
+                <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(detailAppointment.status)}`}>{getStatusLabel(detailAppointment.status)}</span>
               </div>
               {detailAppointment.notes && (
                 <div>

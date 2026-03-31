@@ -181,10 +181,10 @@ def check_availability(
     resource_type: str,
     start_time: datetime,
     duration_minutes: int,
-    gap_minutes: int = 15,
+    gap_minutes: int = 0,
     exclude_appointment_id: Optional[int] = None,
 ) -> dict:
-    end_time = start_time + timedelta(minutes=duration_minutes + gap_minutes)
+    end_time = start_time + timedelta(minutes=duration_minutes)
 
     query = db.query(Appointment).filter(
         Appointment.professional_id == professional_id,
@@ -229,68 +229,44 @@ def check_availability(
     return {
         "professional_available": not professional_busy,
         "available_resources": available_resources,
+        "available_professionals": [],
         "is_available": not professional_busy and len(available_resources) > 0,
     }
 
 
-def check_multi_lock_availability(
+def check_professional_availability(
     db: Session,
     resource_type: str,
     start_time: datetime,
     duration_minutes: int,
-    gap_minutes: int = 15,
-    professional_id: Optional[int] = None,
-) -> dict:
-    end_time = start_time + timedelta(minutes=duration_minutes + gap_minutes)
+    exclude_appointment_id: Optional[int] = None,
+) -> list:
+    end_time = start_time + timedelta(minutes=duration_minutes)
 
-    professionals_query = db.query(Professional).filter(Professional.is_active == True)
-    if professional_id:
-        professionals_query = professionals_query.filter(
-            Professional.id == professional_id
-        )
-    professionals = professionals_query.all()
-
-    resources = (
-        db.query(Resource)
-        .filter(Resource.resource_type == resource_type, Resource.is_available == True)
-        .all()
+    all_professionals = (
+        db.query(Professional).filter(Professional.is_active == True).all()
     )
 
-    available_slots = []
     available_professionals = []
-    available_resources = []
+    for professional in all_professionals:
+        query = db.query(Appointment).filter(
+            Appointment.professional_id == professional.id,
+            Appointment.status.notin_(
+                [AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW]
+            ),
+            or_(
+                and_(
+                    Appointment.start_time < end_time, Appointment.end_time > start_time
+                )
+            ),
+        )
+        if exclude_appointment_id:
+            query = query.filter(Appointment.id != exclude_appointment_id)
 
-    for professional in professionals:
-        for resource in resources:
-            query = db.query(Appointment).filter(
-                or_(
-                    Appointment.professional_id == professional.id,
-                    Appointment.resource_id == resource.id,
-                ),
-                Appointment.status.notin_(
-                    [AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW]
-                ),
-                or_(
-                    and_(
-                        Appointment.start_time < end_time,
-                        Appointment.end_time > start_time,
-                    )
-                ),
-            )
+        if not query.first():
+            available_professionals.append(professional)
 
-            if not query.first():
-                available_professionals.append(professional)
-                available_resources.append(resource)
-                if start_time not in available_slots:
-                    available_slots.append(start_time)
-                break
-
-    return {
-        "available_slots": available_slots,
-        "available_professionals": available_professionals,
-        "available_resources": available_resources,
-        "is_available": len(available_slots) > 0,
-    }
+    return available_professionals
 
 
 def create_appointment(
@@ -309,33 +285,24 @@ def create_appointment(
         else "chair"
     )
 
-    if appointment.resource_id:
-        availability = check_availability(
-            db,
-            appointment.professional_id,
-            resource_type,
-            start_time,
-            duration,
-            exclude_appointment_id=None,
-        )
+    availability = check_availability(
+        db,
+        appointment.professional_id,
+        resource_type,
+        start_time,
+        duration,
+    )
 
-        resource_ids = [r.id for r in availability.get("available_resources", [])]
-        if appointment.resource_id in resource_ids:
-            resource_id = appointment.resource_id
-        else:
-            return None
-    else:
-        availability = check_availability(
-            db,
-            appointment.professional_id,
-            resource_type,
-            start_time,
-            duration,
-        )
+    if not availability["is_available"]:
+        return None
 
-        if not availability["is_available"]:
-            return None
-        resource_id = availability["available_resources"][0].id
+    resource_id = (
+        availability["available_resources"][0].id
+        if availability["available_resources"]
+        else None
+    )
+    if not resource_id:
+        return None
 
     end_time = start_time + timedelta(minutes=duration)
 
@@ -390,24 +357,114 @@ def update_appointment(
     if not db_appointment:
         return None
 
-    for key, value in appointment.model_dump(exclude_unset=True).items():
-        setattr(db_appointment, key, value)
+    start_time = (
+        appointment.start_time if appointment.start_time else db_appointment.start_time
+    )
 
-    if appointment.start_time or appointment.service_id:
-        if appointment.start_time:
-            start_time = appointment.start_time
-        else:
-            start_time = db_appointment.start_time
-
+    if (
+        appointment.start_time
+        or appointment.service_id
+        or appointment.professional_id
+        or appointment.resource_id
+    ):
         if appointment.service_id:
             service = get_service_by_id(db, appointment.service_id)
         else:
             service = db_appointment.service
 
         if service:
-            db_appointment.end_time = start_time + timedelta(
-                minutes=service.duration_minutes
+            duration = service.duration_minutes
+            resource_type = (
+                service.required_resource_type.value
+                if service.required_resource_type
+                else "chair"
             )
+
+            professional_id = (
+                appointment.professional_id
+                if appointment.professional_id is not None
+                else db_appointment.professional_id
+            )
+            resource_id = (
+                appointment.resource_id
+                if appointment.resource_id is not None
+                else db_appointment.resource_id
+            )
+
+            has_professional_change = appointment.professional_id is not None
+            has_resource_change = appointment.resource_id is not None
+
+            if has_professional_change:
+                temp_availability = check_availability(
+                    db,
+                    appointment.professional_id,
+                    resource_type,
+                    start_time,
+                    duration,
+                    exclude_appointment_id=appointment_id,
+                )
+                if not temp_availability["professional_available"]:
+                    return None
+
+            if has_resource_change:
+                temp_availability = check_availability(
+                    db,
+                    professional_id,
+                    resource_type,
+                    start_time,
+                    duration,
+                    exclude_appointment_id=appointment_id,
+                )
+                resource_ids = [
+                    r.id for r in temp_availability.get("available_resources", [])
+                ]
+                if appointment.resource_id not in resource_ids:
+                    return None
+
+            availability = check_availability(
+                db,
+                professional_id,
+                resource_type,
+                start_time,
+                duration,
+                exclude_appointment_id=appointment_id,
+            )
+
+            if not availability["professional_available"]:
+                available_pros = check_professional_availability(
+                    db,
+                    resource_type,
+                    start_time,
+                    duration,
+                    exclude_appointment_id=appointment_id,
+                )
+                if len(available_pros) > 0:
+                    professional_id = available_pros[0].id
+                    availability = check_availability(
+                        db,
+                        professional_id,
+                        resource_type,
+                        start_time,
+                        duration,
+                        exclude_appointment_id=appointment_id,
+                    )
+                else:
+                    return None
+
+            original_resource_id = resource_id
+            resource_ids = [r.id for r in availability.get("available_resources", [])]
+            if resource_id not in resource_ids:
+                if len(availability.get("available_resources", [])) > 0:
+                    resource_id = availability["available_resources"][0].id
+                else:
+                    return None
+
+            db_appointment.professional_id = professional_id
+            db_appointment.resource_id = resource_id
+            db_appointment.end_time = start_time + timedelta(minutes=duration)
+
+    for key, value in appointment.model_dump(exclude_unset=True).items():
+        setattr(db_appointment, key, value)
 
     db.commit()
     db.refresh(db_appointment)
@@ -423,9 +480,19 @@ def cancel_appointment(db: Session, appointment_id: int) -> Optional[Appointment
     return db_appointment
 
 
+def start_appointment(db: Session, appointment_id: int) -> Optional[Appointment]:
+    db_appointment = get_appointment_by_id(db, appointment_id)
+    if db_appointment and db_appointment.status == AppointmentStatus.PENDING:
+        db_appointment.status = AppointmentStatus.IN_PROGRESS
+        db.commit()
+        db.refresh(db_appointment)
+        return db_appointment
+    return None
+
+
 def complete_appointment(db: Session, appointment_id: int) -> Optional[Appointment]:
     db_appointment = get_appointment_by_id(db, appointment_id)
-    if db_appointment:
+    if db_appointment and db_appointment.status == AppointmentStatus.IN_PROGRESS:
         db_appointment.status = AppointmentStatus.COMPLETED
         db.commit()
         db.refresh(db_appointment)
