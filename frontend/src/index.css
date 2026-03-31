@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-text: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-border: #e2e8f0;
+  --color-accent: #c9a962;
+  --color-accent-hover: #a68b4b;
+}
+
+.dark {
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-text: #f8fafc;
+  --color-text-secondary: #94a3b8;
+  --color-border: #334155;
+  --color-accent: #c9a962;
+  --color-accent-hover: #d4b872;
+}
+
+body {
+  @apply bg-[var(--color-bg)] text-[var(--color-text)] transition-colors duration-200;
+}
+
+.card {
+  @apply bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-sm;
+}
+
+.btn-primary {
+  @apply bg-[var(--color-accent)] text-white px-4 py-2 rounded-md hover:bg-[var(--color-accent-hover)] transition-colors duration-200 font-medium;
+}
+
+.btn-secondary {
+  @apply bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] px-4 py-2 rounded-md hover:bg-[var(--color-border)] transition-colors duration-200;
+}
+
+.input {
+  @apply w-full px-3 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent;
+}
+
+.label {
+  @apply block text-sm font-medium text-[var(--color-text-secondary)] mb-1;
+}

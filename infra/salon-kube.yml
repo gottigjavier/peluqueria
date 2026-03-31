@@ -1,0 +1,188 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: salon-db-pvc
+  labels:
+    app: salon
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: salon-config
+  labels:
+    app: salon
+data:
+  DATABASE_URL: "postgresql://salon:salon123@salon-db:5432/salon_db"
+  REDIS_URL: "redis://salon-redis:6379/0"
+  DEBUG: "False"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: salon-db
+  labels:
+    app: salon
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: salon-db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: salon-redis
+  labels:
+    app: salon
+spec:
+  ports:
+    - port: 6379
+      targetPort: 6379
+  selector:
+    app: salon-redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: salon-backend
+  labels:
+    app: salon
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: salon-backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: salon-frontend
+  labels:
+    app: salon
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: salon-frontend
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: salon-db
+  labels:
+    app: salon-db
+spec:
+  containers:
+    - name: db
+      image: docker.io/library/postgres:16
+      env:
+        - name: POSTGRES_USER
+          value: salon
+        - name: POSTGRES_PASSWORD
+          value: salon123
+        - name: POSTGRES_DB
+          value: salon_db
+      ports:
+        - containerPort: 5432
+      volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql/data
+  volumes:
+    - name: db-data
+      persistentVolumeClaim:
+        claimName: salon-db-pvc
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: salon-redis
+  labels:
+    app: salon-redis
+spec:
+  containers:
+    - name: redis
+      image: docker.io/library/redis:7-alpine
+      ports:
+        - containerPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: salon-backend
+  labels:
+    app: salon-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: salon-backend
+  template:
+    metadata:
+      labels:
+        app: salon-backend
+    spec:
+      containers:
+        - name: backend
+          image: localhost/salon-backend:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: salon-config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: salon-frontend
+  labels:
+    app: salon-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: salon-frontend
+  template:
+    metadata:
+      labels:
+        app: salon-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: localhost/salon-frontend:latest
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
