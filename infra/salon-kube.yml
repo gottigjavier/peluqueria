@@ -68,9 +68,11 @@ metadata:
   labels:
     app: salon
 spec:
+  type: NodePort
   ports:
-    - port: 80
-      targetPort: 80
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30000
   selector:
     app: salon-frontend
 ---
@@ -132,7 +134,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: localhost/salon-backend:latest
+          image: localhost/infra_backend:latest
           ports:
             - containerPort: 8000
           envFrom:
@@ -176,9 +178,10 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: localhost/salon-frontend:latest
+          image: localhost/infra_frontend:latest
           ports:
-            - containerPort: 80
+            - containerPort: 3000
+              hostPort: 3000
           resources:
             requests:
               memory: "128Mi"

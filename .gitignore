@@ -1,0 +1,5 @@
+sessions/
+.jj/
+.ruff_cache/
+**/node_modules/
+frontend/package-lock.json

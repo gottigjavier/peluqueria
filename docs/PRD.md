@@ -195,6 +195,40 @@ SECRET_KEY=your-secret-key
 
 ---
 
+## 9. Seguridad en Producción
+
+### Network Policies
+En un entorno de producción expuesto a internet, se recomienda implementar **Network Policies** para aislar la comunicación entre pods:
+
+```yaml
+# Ejemplo: solo frontend puede hablar con backend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-allow-frontend
+spec:
+  podSelector:
+    matchLabels:
+      app: salon-backend
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: salon-frontend
+      ports:
+        - port: 8000
+```
+
+**Reglas recomendadas:**
+- `salon-frontend` → `salon-backend` (puerto 8000)
+- `salon-backend` → `salon-db` (puerto 5432)
+- `salon-backend` → `salon-redis` (puerto 6379)
+- Ningún otro tráfico entre pods
+
+Esto limita el impacto si un contenedor es comprometido, evitando que acceda a servicios internos no relacionados.
+
+---
+
 ## 9. Ejecución del Proyecto
 
 ### Desarrollo
