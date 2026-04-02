@@ -268,19 +268,21 @@ def check_available_services(request: dict, db: Session = Depends(get_db)):
             else "chair"
         )
 
-        available_resources = (
+        all_resources = (
             db.query(Resource)
-            .filter(
-                Resource.resource_type == resource_type, Resource.is_available == True
-            )
+            .filter(Resource.resource_type == ResourceType(resource_type))
             .all()
         )
 
-        for resource in available_resources:
+        for resource in all_resources:
             query = db.query(Appointment).filter(
                 Appointment.resource_id == resource.id,
-                Appointment.status.notin_(
-                    [AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW]
+                Appointment.status.in_(
+                    [
+                        AppointmentStatus.PENDING,
+                        AppointmentStatus.CONFIRMED,
+                        AppointmentStatus.IN_PROGRESS,
+                    ]
                 ),
                 or_(
                     and_(
@@ -335,8 +337,12 @@ def check_available_professionals(request: dict, db: Session = Depends(get_db)):
     for professional in all_professionals:
         query = db.query(Appointment).filter(
             Appointment.professional_id == professional.id,
-            Appointment.status.notin_(
-                [AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW]
+            Appointment.status.in_(
+                [
+                    AppointmentStatus.PENDING,
+                    AppointmentStatus.CONFIRMED,
+                    AppointmentStatus.IN_PROGRESS,
+                ]
             ),
             or_(
                 and_(
@@ -373,14 +379,51 @@ def check_appointment_availability(request: dict, db: Session = Depends(get_db))
     available_professionals = []
 
     for service in all_services:
-        available_services.append(
-            {
-                "id": service.id,
-                "name": service.name,
-                "duration_minutes": service.duration_minutes,
-                "price": service.price,
-            }
+        resource_type = (
+            service.required_resource_type.value
+            if service.required_resource_type
+            else "chair"
         )
+
+        all_resources = (
+            db.query(Resource)
+            .filter(Resource.resource_type == ResourceType(resource_type))
+            .all()
+        )
+
+        has_available_resource = False
+        for resource in all_resources:
+            query = db.query(Appointment).filter(
+                Appointment.resource_id == resource.id,
+                Appointment.status.in_(
+                    [
+                        AppointmentStatus.PENDING,
+                        AppointmentStatus.CONFIRMED,
+                        AppointmentStatus.IN_PROGRESS,
+                    ]
+                ),
+                or_(
+                    and_(
+                        Appointment.start_time
+                        < start_time + timedelta(minutes=service.duration_minutes),
+                        Appointment.end_time > start_time,
+                    )
+                ),
+            )
+
+            if not query.first():
+                has_available_resource = True
+                break
+
+        if has_available_resource:
+            available_services.append(
+                {
+                    "id": service.id,
+                    "name": service.name,
+                    "duration_minutes": service.duration_minutes,
+                    "price": service.price,
+                }
+            )
 
     for professional in all_professionals:
         default_duration = 60
@@ -388,8 +431,12 @@ def check_appointment_availability(request: dict, db: Session = Depends(get_db))
 
         query = db.query(Appointment).filter(
             Appointment.professional_id == professional.id,
-            Appointment.status.notin_(
-                [AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW]
+            Appointment.status.in_(
+                [
+                    AppointmentStatus.PENDING,
+                    AppointmentStatus.CONFIRMED,
+                    AppointmentStatus.IN_PROGRESS,
+                ]
             ),
             or_(
                 and_(
@@ -467,6 +514,7 @@ def check_availability(
     start_time: datetime,
     duration_minutes: int,
     gap_minutes: int = 15,
+    service_id: Optional[int] = None,
     db: Session = Depends(get_db),
 ):
     return services.check_availability(
@@ -476,6 +524,7 @@ def check_availability(
         start_time,
         duration_minutes,
         gap_minutes,
+        service_id=service_id,
     )
 
 

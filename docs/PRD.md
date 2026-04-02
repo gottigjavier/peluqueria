@@ -71,9 +71,10 @@ Manifiestos Kubernetes ejecutables con `podman kube play`:
 
 ### 4.1. Algoritmo de Disponibilidad "Multi-Lock"
 El sistema debe realizar una reserva atómica que bloquee tres ejes:
-1. **Staff**: Disponibilidad del profesional
-2. **Espacio**: Disponibilidad del recurso físico (no hay masaje si la cabina está ocupada)
-3. **Tiempo**: Bloques con gap de limpieza configurable (15 min por defecto)
+1. **Recurso**: Disponibilidad del recurso físico (no hay cama de masaje si está ocupada)
+2. **Servicio**: La disponibilidad del servicio depende del recurso físico.
+3. **Staff**: Disponibilidad del profesional
+4. **Tiempo**: Bloques con gap de limpieza configurable (5 min por defecto)
 
 ### 4.2. Módulo de Historial y Multimedia
 - Almacenamiento de fotos "Antes/Después"

@@ -65,6 +65,7 @@ class Service(Base):
     description = Column(Text, nullable=True)
     required_resource_type = Column(Enum(ResourceType), nullable=True)
     is_active = Column(Boolean, default=True)
+    is_available = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     appointments = relationship("Appointment", back_populates="service")
@@ -90,6 +91,7 @@ class Professional(Base):
     name = Column(String(200), nullable=False)
     specialty = Column(String(200), nullable=True)
     is_active = Column(Boolean, default=True)
+    is_available = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     appointments = relationship("Appointment", back_populates="professional")
