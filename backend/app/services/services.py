@@ -115,13 +115,7 @@ def create_resource(db: Session, resource: ResourceCreate) -> Resource:
 
 
 def get_resources(db: Session, skip: int = 0, limit: int = 100) -> list[Resource]:
-    return (
-        db.query(Resource)
-        .filter(Resource.is_available == True)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+    return db.query(Resource).offset(skip).limit(limit).all()
 
 
 def get_resource_by_id(db: Session, resource_id: int) -> Optional[Resource]:
