@@ -48,10 +48,7 @@ export default function Sales() {
   };
 
   const formatTimeNoSeconds = (dateString) => {
-    const date = new Date(dateString);
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
+    return formatTime(dateString).split(' ')[1];
   };
 
   const totalAmount = sales.reduce((sum, s) => sum + s.amount, 0);
@@ -143,8 +140,9 @@ export default function Sales() {
                   <td className="px-4 py-3">{sale.professional_name}</td>
                   <td className="px-4 py-3 text-right">
                     <input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      //type="number"
+                      //step="100"
                       defaultValue={sale.amount}
                       onBlur={(e) => handleEditAmount(sale, parseFloat(e.target.value))}
                       className="input w-24 text-right"
