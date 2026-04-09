@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(formatDate(new Date().toISOString()));
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  const todayStr = new Date().toISOString().split('T')[0];
   const today = formatDate(new Date().toISOString());
   const isToday = selectedDate === today;
 
@@ -25,7 +26,7 @@ export default function Dashboard() {
       servicesApi.getAll(),
       resourcesApi.getAll(),
       professionalsApi.getAll(),
-      salesApi.getTotal()
+      salesApi.getCompletedAppointments({ start_date: todayStr + 'T00:00:00', end_date: todayStr + 'T23:59:59' })
     ]).then(([clientsRes, appointmentsRes, servicesRes, resourcesRes, professionalsRes, salesRes]) => {
       const sDict = {}; servicesRes.data.forEach(s => sDict[s.id] = s);
       const cDict = {}; clientsRes.data.forEach(c => cDict[c.id] = c);
@@ -45,16 +46,21 @@ export default function Dashboard() {
       const pendingCount = todayAppointments.filter(a => a.status === 'pending').length;
       const inProgressCount = todayAppointments.filter(a => a.status === 'in_progress').length;
       
+      const todaySales = salesRes.data.reduce((sum, s) => sum + s.amount, 0);
+      
       setStats({
         clients: clientsRes.data.length,
         appointments: pendingCount + inProgressCount,
         services: servicesRes.data.length,
-        sales: salesRes.data.total || 0,
+        sales: todaySales,
         pendingCount,
         inProgressCount
       });
+      
+      const activeTodayAppointments = todayAppointments.filter(a => a.status === 'pending' || a.status === 'in_progress');
+      setRecentAppointments(activeTodayAppointments);
     }).catch(console.error);
-  }, []);
+  }, [today, todayStr]);
 
   useEffect(() => {
     appointmentsApi.getAll().then(res => {
