@@ -196,3 +196,28 @@ class AvailabilityResponse(BaseModel):
     available_slots: list[datetime]
     available_resources: list[ResourceResponse]
     available_professionals: list[ProfessionalResponse]
+
+
+class SaleBase(BaseModel):
+    appointment_id: int
+    amount: float
+
+
+class SaleResponse(SaleBase):
+    id: int
+    sale_date: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CompletedAppointmentResponse(BaseModel):
+    id: int
+    completed_at: datetime
+    service_name: str
+    service_price: float
+    professional_name: str
+    amount: float
+
+    class Config:
+        from_attributes = True

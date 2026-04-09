@@ -118,6 +118,9 @@ class Appointment(Base):
     service = relationship("Service", back_populates="appointments")
     professional = relationship("Professional", back_populates="appointments")
     resource = relationship("Resource", back_populates="appointments")
+    sale = relationship("Sale", uselist=False, back_populates="appointment")
+    before_after_photos = relationship("BeforeAfterPhoto", back_populates="appointment")
+    inventory_logs = relationship("InventoryLog", back_populates="appointment")
 
 
 class BeforeAfterPhoto(Base):
@@ -130,7 +133,7 @@ class BeforeAfterPhoto(Base):
     description = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    appointment = relationship("Appointment")
+    appointment = relationship("Appointment", back_populates="before_after_photos")
 
 
 class InventoryLog(Base):
@@ -144,3 +147,14 @@ class InventoryLog(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     appointment = relationship("Appointment")
+
+
+class Sale(Base):
+    __tablename__ = "sales"
+
+    id = Column(Integer, primary_key=True, index=True)
+    appointment_id = Column(Integer, ForeignKey("appointments.id"), nullable=False)
+    amount = Column(Float, nullable=False)
+    sale_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    appointment = relationship("Appointment", back_populates="sale")

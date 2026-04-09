@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { clientsApi, appointmentsApi, servicesApi, resourcesApi, professionalsApi } from '../hooks/useApi';
+import { clientsApi, appointmentsApi, servicesApi, resourcesApi, professionalsApi, salesApi } from '../hooks/useApi';
 import { Users, Calendar, Scissors, TrendingUp, X } from 'lucide-react';
 import { formatDateTime, formatTime, formatDate } from '../utils/dateUtils';
 
@@ -24,8 +24,9 @@ export default function Dashboard() {
       appointmentsApi.getAll(),
       servicesApi.getAll(),
       resourcesApi.getAll(),
-      professionalsApi.getAll()
-    ]).then(([clientsRes, appointmentsRes, servicesRes, resourcesRes, professionalsRes]) => {
+      professionalsApi.getAll(),
+      salesApi.getTotal()
+    ]).then(([clientsRes, appointmentsRes, servicesRes, resourcesRes, professionalsRes, salesRes]) => {
       const sDict = {}; servicesRes.data.forEach(s => sDict[s.id] = s);
       const cDict = {}; clientsRes.data.forEach(c => cDict[c.id] = c);
       const pDict = {}; professionalsRes.data.forEach(p => pDict[p.id] = p);
@@ -35,12 +36,6 @@ export default function Dashboard() {
       setClientsMap(cDict);
       setProfessionalsMap(pDict);
       setResourcesMap(rDict);
-      
-      const completedAppointments = appointmentsRes.data.filter(a => a.status === 'completed');
-      const totalSales = completedAppointments.reduce((sum, apt) => {
-        const service = sDict[apt.service_id];
-        return sum + (service ? service.price : 0);
-      }, 0);
       
       const todayAppointments = appointmentsRes.data.filter(a => {
         const aptDate = formatDate(a.start_time);
@@ -54,7 +49,7 @@ export default function Dashboard() {
         clients: clientsRes.data.length,
         appointments: pendingCount + inProgressCount,
         services: servicesRes.data.length,
-        sales: totalSales,
+        sales: salesRes.data.total || 0,
         pendingCount,
         inProgressCount
       });

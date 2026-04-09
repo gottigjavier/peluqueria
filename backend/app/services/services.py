@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone, timezone as tz
 from typing import Optional
 from app.models.models import (
     Client,
@@ -12,6 +12,7 @@ from app.models.models import (
     BeforeAfterPhoto,
     AppointmentStatus,
     ResourceType,
+    Sale,
 )
 from app.schemas.schemas import (
     ClientCreate,
@@ -310,10 +311,14 @@ def create_appointment(
     if not service:
         return None
 
-    now = datetime.now()
+    TIMEZONE = timezone(timedelta(hours=-3))
+    now = datetime.now(TIMEZONE)
     start_time = appointment.start_time
 
-    if start_time.replace(tzinfo=None) < now.replace(tzinfo=None):
+    if start_time.tzinfo is None:
+        start_time = start_time.replace(tzinfo=TIMEZONE)
+
+    if start_time < now:
         return None
 
     duration = service.duration_minutes
@@ -423,12 +428,16 @@ def update_appointment(
     if not db_appointment:
         return None
 
-    now = datetime.now()
+    TIMEZONE = timezone(timedelta(hours=-3))
+    now = datetime.now(TIMEZONE)
     start_time = (
         appointment.start_time if appointment.start_time else db_appointment.start_time
     )
 
-    if start_time.replace(tzinfo=None) < now.replace(tzinfo=None):
+    if start_time.tzinfo is None:
+        start_time = start_time.replace(tzinfo=TIMEZONE)
+
+    if start_time < now:
         return None
 
     if (
@@ -614,6 +623,12 @@ def complete_appointment(db: Session, appointment_id: int) -> Optional[Appointme
             if professional:
                 professional.is_available = True
 
+        if db_appointment.service_id:
+            service = get_service_by_id(db, db_appointment.service_id)
+            if service and service.price:
+                sale = Sale(appointment_id=appointment_id, amount=service.price)
+                db.add(sale)
+
         db.commit()
         db.refresh(db_appointment)
     return db_appointment
@@ -642,3 +657,71 @@ def add_inventory_log(db: Session, log_data: dict) -> InventoryLog:
     db.commit()
     db.refresh(log)
     return log
+
+
+def get_total_sales(db: Session) -> dict:
+    from sqlalchemy import func
+
+    total = db.query(func.sum(Sale.amount)).scalar() or 0
+    return {"total": float(total)}
+
+
+def get_sales(db: Session, skip: int = 0, limit: int = 100) -> list[Sale]:
+    return (
+        db.query(Sale).order_by(Sale.sale_date.desc()).offset(skip).limit(limit).all()
+    )
+
+
+def get_completed_appointments_with_sales(
+    db: Session,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    service_id: Optional[int] = None,
+    professional_id: Optional[int] = None,
+) -> list[dict]:
+    from sqlalchemy import func
+
+    start_dt = None
+    end_dt = None
+    if start_date:
+        start_dt = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+    if end_date:
+        end_dt = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+
+    query = (
+        db.query(
+            Appointment.id,
+            Sale.sale_date.label("completed_at"),
+            Service.name.label("service_name"),
+            Service.price.label("service_price"),
+            Professional.name.label("professional_name"),
+            Sale.amount,
+        )
+        .join(Sale, Sale.appointment_id == Appointment.id)
+        .join(Service, Service.id == Appointment.service_id)
+        .join(Professional, Professional.id == Appointment.professional_id)
+        .filter(Appointment.status == AppointmentStatus.COMPLETED)
+    )
+
+    if start_dt:
+        query = query.filter(func.date(Sale.sale_date) >= func.date(start_dt))
+    if end_dt:
+        query = query.filter(func.date(Sale.sale_date) <= func.date(end_dt))
+    if service_id:
+        query = query.filter(Appointment.service_id == service_id)
+    if professional_id:
+        query = query.filter(Appointment.professional_id == professional_id)
+
+    results = query.order_by(Sale.sale_date.desc()).all()
+
+    return [
+        {
+            "id": r.id,
+            "completed_at": r.completed_at,
+            "service_name": r.service_name,
+            "service_price": r.service_price,
+            "professional_name": r.professional_name,
+            "amount": float(r.amount),
+        }
+        for r in results
+    ]

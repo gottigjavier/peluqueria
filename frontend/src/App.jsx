@@ -7,6 +7,7 @@ import Appointments from './pages/Appointments';
 import Services from './pages/Services';
 import Professionals from './pages/Professionals';
 import Resources from './pages/Resources';
+import Sales from './pages/Sales';
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
             <Route path="/services" element={<Services />} />
             <Route path="/professionals" element={<Professionals />} />
             <Route path="/resources" element={<Resources />} />
+            <Route path="/sales" element={<Sales />} />
           </Routes>
         </Layout>
       </BrowserRouter>

@@ -10,6 +10,7 @@ const navItems = [
   { path: '/services', label: 'Servicios', icon: '✂️' },
   { path: '/professionals', label: 'Profesionales', icon: '👩‍💼' },
   { path: '/resources', label: 'Recursos', icon: '🪑' },
+  { path: '/sales', label: 'Ventas', icon: '💰' },
 ];
 
 export default function Layout({ children }) {

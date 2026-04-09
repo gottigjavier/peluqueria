@@ -55,4 +55,11 @@ export const availabilityApi = {
   checkMultiLock: (params) => api.get('/availability/multi-lock', { params })
 };
 
+export const salesApi = {
+  getTotal: () => api.get('/sales'),
+  getAll: (params) => api.get('/sales/all', { params }),
+  getCompletedAppointments: (params) => api.get('/sales/completed-appointments', { params }),
+  updateAmount: (saleId, amount) => api.put(`/sales/${saleId}`, { amount })
+};
+
 export default api;

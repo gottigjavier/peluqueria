@@ -10,6 +10,7 @@ from app.models.models import (
     Appointment,
     AppointmentStatus,
     Resource,
+    Sale,
 )
 from app.schemas.schemas import (
     ClientCreate,
@@ -538,3 +539,42 @@ def check_multi_lock_availability(
     db: Session = Depends(get_db),
 ):
     return {"available": True}
+
+
+@router.get("/sales", response_model=dict)
+def get_total_sales(db: Session = Depends(get_db)):
+    return services.get_total_sales(db)
+
+
+@router.get("/sales/all", response_model=list)
+def get_all_sales(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return services.get_sales(db, skip, limit)
+
+
+@router.get("/sales/completed-appointments", response_model=list)
+def get_completed_appointments(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    service_id: Optional[int] = None,
+    professional_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+):
+    return services.get_completed_appointments_with_sales(
+        db, start_date, end_date, service_id, professional_id
+    )
+
+
+@router.put("/sales/{sale_id}", response_model=dict)
+def update_sale_amount(sale_id: int, request: dict, db: Session = Depends(get_db)):
+    amount = request.get("amount")
+    if amount is None:
+        raise HTTPException(status_code=400, detail="amount is required")
+
+    sale = db.query(Sale).filter(Sale.id == sale_id).first()
+    if not sale:
+        raise HTTPException(status_code=404, detail="Sale not found")
+
+    sale.amount = amount
+    db.commit()
+    db.refresh(sale)
+    return {"id": sale.id, "amount": sale.amount}
