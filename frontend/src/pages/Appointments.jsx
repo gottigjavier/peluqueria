@@ -21,6 +21,7 @@ export default function Appointments() {
   const [clientsMap, setClientsMap] = useState({});
   const [professionalsMap, setProfessionalsMap] = useState({});
   const [resourcesMap, setResourcesMap] = useState({});
+  const [clientFilter, setClientFilter] = useState('');
 
   useEffect(() => {
     loadData();
@@ -109,7 +110,8 @@ export default function Appointments() {
       
       setShowModal(false);
       setEditingAppointment(null);
-      setFormData({ client_id: '', service_id: '', professional_id: '', start_date: '', start_time: '', notes: '' });
+setFormData({ client_id: '', service_id: '', professional_id: '', start_date: '', start_time: '', notes: '' });
+      setClientFilter('');
       loadData();
     } catch (err) {
       alert('Error: ' + (err.response?.data?.detail || 'Verificar disponibilidad'));
@@ -176,7 +178,7 @@ export default function Appointments() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Turnos</h1>
-        <button onClick={() => { setEditingAppointment(null); setFormData({ client_id: '', service_id: '', professional_id: '', start_date: '', start_time: '', notes: '' }); setAvailabilityChecked(false); setFilteredServices([]); setFilteredProfessionals([]); setSelectedService(null); setShowModal(true); }} className="btn-primary flex items-center gap-2">
+        <button onClick={() => { setEditingAppointment(null); setFormData({ client_id: '', service_id: '', professional_id: '', start_date: '', start_time: '', notes: '' }); setAvailabilityChecked(false); setFilteredServices([]); setFilteredProfessionals([]); setSelectedService(null); setClientFilter(''); setShowModal(true); }} className="btn-primary flex items-center gap-2">
           <Plus className="w-4 h-4" /> Nuevo Turno
         </button>
       </div>
@@ -329,9 +331,23 @@ export default function Appointments() {
               </div>
               <div>
                 <label className="label">Cliente</label>
-                <select value={formData.client_id} onChange={e => setFormData({...formData, client_id: e.target.value})} className="input" required>
+                <input 
+                  type="text" 
+                  placeholder="Buscar cliente..." 
+                  value={clientFilter} 
+                  onChange={e => setClientFilter(e.target.value)} 
+                  className="input mb-2"
+                />
+                <select 
+                  value={formData.client_id} 
+                  onChange={e => setFormData({...formData, client_id: e.target.value})} 
+                  className="input" 
+                  required
+                >
                   <option value="">Seleccionar cliente</option>
-                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {clients.filter(c => c.name.toLowerCase().includes(clientFilter.toLowerCase()) || (c.phone && c.phone.includes(clientFilter))).map(c => (
+                    <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -340,7 +356,7 @@ export default function Appointments() {
               </div>
               <div className="flex gap-3 pt-4">
                 <button type="submit" className="btn-primary flex-1">{editingAppointment ? 'Guardar' : 'Crear Turno'}</button>
-                <button type="button" onClick={() => { setShowModal(false); setEditingAppointment(null); setAvailabilityChecked(false); setSelectedService(null); }} className="btn-secondary flex-1">Cancelar</button>
+                <button type="button" onClick={() => { setShowModal(false); setEditingAppointment(null); setAvailabilityChecked(false); setSelectedService(null); setClientFilter(''); }} className="btn-secondary flex-1">Cancelar</button>
               </div>
             </form>
           </div>

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Sistema de Gestión Peluquería</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 12pt;
+            line-height: 1.6;
+            color: #333;
+            max-width: 21cm;
+            margin: 0 auto;
+            padding: 2cm;
+        }
+        
+        h1 {
+            font-size: 24pt;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 10pt;
+            padding-bottom: 10pt;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        h2 {
+            font-size: 16pt;
+            color: #2980b9;
+            margin-top: 25pt;
+            margin-bottom: 15pt;
+            padding-bottom: 5pt;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        
+        h3 {
+            font-size: 14pt;
+            color: #16a085;
+            margin-top: 15pt;
+            margin-bottom: 10pt;
+        }
+        
+        p {
+            margin-bottom: 10pt;
+            text-align: justify;
+        }
+        
+        ul, ol {
+            margin-left: 25pt;
+            margin-bottom: 15pt;
+        }
+        
+        li {
+            margin-bottom: 5pt;
+        }
+        
+        .destacado {
+            background-color: #e8f6f3;
+            padding: 10pt;
+            border-left: 4px solid #1abc9c;
+            margin: 15pt 0;
+        }
+        
+        .aviso {
+            background-color: #fef9e7;
+            padding: 10pt;
+            border-left: 4px solid #f39c12;
+            margin: 15pt 0;
+        }
+        
+        .importante {
+            background-color: #fdedec;
+            padding: 10pt;
+            border-left: 4px solid #e74c3c;
+            margin: 15pt 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15pt 0;
+        }
+        
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 8pt;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #ecf0f1;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30pt;
+            padding-top: 10pt;
+            border-top: 1px solid #bdc3c7;
+            font-size: 10pt;
+            color: #7f8c8d;
+        }
+        
+        .header-info {
+            text-align: center;
+            margin-bottom: 20pt;
+        }
+        
+        .header-info p {
+            text-align: center;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Página 1: Título e Introducción -->
+<div class="header-info">
+    <p>Sistema de Gestión Integral</p>
+</div>
+
+<h1>Manual de Usuario</h1>
+
+<p style="text-align: center; font-size: 14pt; margin-bottom: 30pt;">
+    <strong>Plataforma de Gestión para Salones de Belleza</strong>
+</p>
+
+<div class="destacado">
+    <strong>¿Qué es este sistema?</strong><br>
+    Es una aplicación web que te permite gestionar todos los aspectos de tu salón de belleza: clientes, servicios, profesionales, recursos físicos y turnos.
+</div>
+
+<h2>Acceso a la Aplicación</h2>
+
+<p>Para acceder al sistema, necesitas un navegador web (Chrome, Firefox, Edge o Safari) y conexión a internet.</p>
+
+<p><strong>URL de la aplicación:</strong> <em><a href="https://peluqueria-lac.vercel.app/" target="_blank">https://peluqueria-lac.vercel.app/</a></em></p>
+
+<div class="aviso">
+    <strong>Primera vez:</strong> Al entrar por primera vez, verás el Dashboard con estadísticas en cero. ¡No te preocupes! A medida que cargues datos, las métricas se actualizarán automáticamente.
+</div>
+
+<h2>Interface Principal</h2>
+
+<p>La aplicación tiene un menú lateral izquierdo con las siguientes secciones:</p>
+
+<ul>
+    <li><strong>Dashboard</strong>: Resumen y estadísticas del día</li>
+    <li><strong>Clientes</strong>: Gestión de clientes registrados</li>
+    <li><strong>Servicios</strong>: Catálogo de servicios ofrecidos</li>
+    <li><strong>Profesionales</strong>: Empleados del salón</li>
+    <li><strong>Recursos</strong>: Sillas, camillas, cabinas</li>
+    <li><strong>Turnos</strong>: Reserva y gestión de turnos</li>
+    <li><strong>Ventas</strong>: Historial de servicios completados</li>
+</ul>
+
+<p>En la parte superior derecha encuentras el botón para cambiar entre <strong>modo claro</strong> y <strong>modo oscuro</strong> (ideal para trabajar de noche).</p>
+
+<!-- Página 2: Configuración Inicial -->
+<div class="page-break"></div>
+
+<h2>Primeros Pasos: Configuración</h2>
+
+<p>Antes de comenzar a atender clientes, necesitas configurar los datos básicos del salón. Sigue este orden:</p>
+
+<h3>1. Agregar Profesionales</h3>
+
+<p>Ve a la sección <strong>Profesionales</strong> y agrega a cada empleado:</p>
+
+<ul>
+    <li>Nombre del profesional</li>
+    <li>Especialidad (ej: coloración, corte, manicura)</li>
+    <li>Estado: Activo/Inactivo</li>
+</ul>
+
+<div class="destacado">
+    <strong>Consejo:</strong> Agrega primero a todos tus profesionales, luego será más fácil crear los turnos.
+</div>
+
+<h3>2. Agregar Recursos</h3>
+
+<p>Ve a la sección <strong>Recursos</strong> y registra los espacios físicos:</p>
+
+<table>
+    <tr>
+        <th>Tipo</th>
+        <th>Ejemplo</th>
+        <th>Descripción</th>
+    </tr>
+    <tr>
+        <td>Silla</td>
+        <td>Silla 1, Silla 2</td>
+        <td>Para cortes y peinados</td>
+    </tr>
+    <tr>
+        <td>Camilla</td>
+        <td>Camilla 1</td>
+        <td>Para masajes</td>
+    </tr>
+    <tr>
+        <td>Cabina</td>
+        <td>Cabina color</td>
+        <td>Para aplicación de tintura</td>
+    </tr>
+    <tr>
+        <td>Estación</td>
+        <td>Estación uñas</td>
+        <td>Para manicura/pedicura</td>
+    </tr>
+</table>
+
+<h3>3. Agregar Servicios</h3>
+
+<p>Ve a la sección <strong>Servicios</strong> y crea cada servicio:</p>
+
+<ul>
+    <li><strong>Nombre</strong>: Ej: "Corte de cabello"</li>
+    <li><strong>Categoría</strong>: haircut, color, makeup, nails, massage, other</li>
+    <li><strong>Duración</strong>: Tiempo en minutos (ej: 30, 45, 60)</li>
+    <li><strong>Precio</strong>: Valor del servicio</li>
+    <li><strong>Tipo de recurso</strong>: Qué recurso necesita (silla, camilla, cabina)</li>
+</ul>
+
+<div class="aviso">
+    <strong>Importante:</strong> Define bien la duración de cada servicio. El sistema usa este dato para calcular los horarios disponibles automáticamente.
+</div>
+
+<h3>4. Agregar Clientes</h3>
+
+<p>Ve a la sección <strong>Clientes</strong> y registra a tus clientes:</p>
+
+<ul>
+    <li>Nombre completo</li>
+    <li>Teléfono (importante para comunicaciones)</li>
+    <li>Email (opcional)</li>
+    <li>Notas (alergias, preferencias, etc.)</li>
+</ul>
+
+<!-- Página 3: Gestión de Turnos -->
+<div class="page-break"></div>
+
+<h2>Cómo Reservar un Turno</h2>
+
+<p>Una vez configurado todo, puedes comenzar a reservar turnos.</p>
+
+<h3>1. Crear un Nuevo Turno</h3>
+
+<p>Ve a <strong>Turnos</strong> y sigue estos pasos:</p>
+
+<ol>
+    <li>Haz clic en <strong>"Nuevo Turno"</strong></li>
+    <li>Selecciona el <strong>cliente</strong> (o crea uno nuevo)</li>
+    <li>Elige el <strong>servicio</strong> que necesita</li>
+    <li>Elige el <strong>profesional</strong> de preferencia</li>
+    <li>Selecciona la <strong>fecha y hora</strong></li>
+    <li>El sistema verificará automáticamente que el profesional y el recurso estén disponibles</li>
+    <li>Agrega <strong>notas</strong> si es necesario</li>
+    <li>Haz clic en <strong>"Guardar"</strong></li>
+</ol>
+
+<div class="destacado">
+    <strong>El sistema hace todo:</strong> No necesitas calcular horarios. El sistema verifica disponibilidad del profesional, del recurso físico (silla/camilla) y del tiempo necesario para el servicio automáticamente.
+</div>
+
+<h3>2. Estados de un Turno</h3>
+
+<table>
+    <tr>
+        <th>Estado</th>
+        <th>Significado</th>
+        <th>Qué hacer</th>
+    </tr>
+    <tr>
+        <td>Pendiente</td>
+        <td>Turno reservado, sin iniciar</td>
+        <td>El cliente aún no ha llegado</td>
+    </tr>
+    <tr>
+        <td>En curso</td>
+        <td>El servicio está realizándose</td>
+        <td>El profesional comenzó el trabajo</td>
+    </tr>
+    <tr>
+        <td>Completado</td>
+        <td>El servicio finalizo</td>
+        <td>Se registró la venta</td>
+    </tr>
+    <tr>
+        <td>Cancelado</td>
+        <td>El turno fue cancelado</td>
+        <td>No se atendió</td>
+    </tr>
+</table>
+
+<h3>3. Atender un Turno</h3>
+
+<p>Cuando el cliente llega y comienza el servicio:</p>
+
+<ol>
+    <li>Busca el turno en la lista</li>
+    <li>Haz clic en <strong>"Iniciar"</strong> para marcar como "En curso"</li>
+    <li>Cuando finishes, haz clic en <strong>"Completar"</strong></li>
+</ol>
+
+<p>Al completar, el sistema automáticamente guarda el turno en <strong>Ventas</strong> con el precio del servicio.</p>
+
+<!-- Página 4: Uso del Dashboard -->
+<div class="page-break"></div>
+
+<h2>Cómo Usar el Dashboard</h2>
+
+<p>El Dashboard es tu pantalla principal. Muestra:</p>
+
+<ul>
+    <li><strong>Clientes:</strong> Total de clientes registrados</li>
+    <li><strong>Turnos:</strong> Turnos del día (pendientes + en curso)</li>
+    <li><strong>Servicios:</strong> Cantidad de servicios en el catálogo</li>
+    <li><strong>Ventas:</strong> Total de ventas del día</li>
+</ul>
+
+<h3>Ver Turnos de Otros Días</h3>
+
+<p>Por defecto, el Dashboard muestra los turnos del día de hoy. Para ver otros días:</p>
+
+<ol>
+    <li>Haz clic en la tarjeta de <strong>Turnos</strong></li>
+    <li>Usa el selector de fecha para elegir otro día</li>
+    <li>La lista se actualiza automáticamente</li>
+</ol>
+
+<h3>Ver Detalle de un Turno</h3>
+
+<p>En la lista de turnos del día, haz clic en cualquier turno para ver:</p>
+
+<ul>
+    <li>Datos completos del cliente</li>
+    <li>Profesional asignado</li>
+    <li>Recurso asignado</li>
+    <li>Horario completo</li>
+    <li>Precio del servicio</li>
+    <li>Notas</li>
+</ul>
+
+<!-- Página 5: Tips y Resolución de Problemas -->
+<div class="page-break"></div>
+
+<h2>Consejos Prácticos</h2>
+
+<h3>Para aprovechar mejor el sistema:</h3>
+
+<ul>
+    <li><strong>Registra todos los clientes:</strong> Así evitas tomar turnos sin tener datos de contacto.</li>
+    <li><strong>Mantén actualizado el catálogo:</strong> Agrega nuevos servicios cuando cambie tu oferta.</li>
+    <li><strong>Usa las notas:</strong> Anota preferencias, alergias o fórmulas de color.</li>
+    <li><strong>Modos oscuro:</strong> Úsalo de noche para no cansar la vista.</li>
+    <li><strong>Revisa el Dashboard cada mañana:</strong> Así ves los turnos del día.</li>
+</ul>
+
+<div class="destacado">
+    <strong>Modo oscuro:</strong> Haz clic en el ícono de sol/luna cerca del menú para cambiar entre modo claro y oscuro.
+</div>
+
+<h2>Problemas Comunes</h2>
+
+<table>
+    <tr>
+        <th>Problema</th>
+        <th>Causa probable</th>
+        <th>Solución</th>
+    </tr>
+    <tr>
+        <td>No puedo crear un turno</td>
+        <td>Horario ocupado</td>
+        <td>Elige otro horario o profesional</td>
+    </tr>
+    <tr>
+        <td>No aparece el recurso</td>
+        <td>No fue creado</td>
+        <td>Ve a Recursos y agrégalo</td>
+    </tr>
+    <tr>
+        <td>No carga la página</td>
+        <td>Sin internet</td>
+        <td>Verifica tu conexión</td>
+    </tr>
+    <tr>
+        <td>El precio aparece en 0</td>
+        <td>No se definió precio</td>
+        <td>Edita el servicio y agrega precio</td>
+    </tr>
+</table>
+
+<div class="importante">
+    <strong>Soporte:</strong> Si tienes problemas técnicos que no puedes resolver, contacta al administrador del sistema.
+</div>
+
+<h2>Seguridad y Respaldo</h2>
+
+<ul>
+    <li><strong>No compartas tu URL</strong> con personas de confianza</li>
+    <li><strong>Haz respaldos:</strong> Exporta tus datos periódicamente (consulta al administrador)</li>
+    <li><strong>Contraseñas:</strong> El sistema no maneja contraseñas de usuario por ahora</li>
+</ul>
+
+<!-- Página 6: Resumen -->
+<div class="page-break"></div>
+
+<h2>Resumen de Funcionalidades</h2>
+
+<table>
+    <tr>
+        <th>Módulo</th>
+        <th>Acciones disponibles</th>
+    </tr>
+    <tr>
+        <td>Dashboard</td>
+        <td>Ver estadísticas, turnos del día, seleccionar fecha</td>
+    </tr>
+    <tr>
+        <td>Clientes</td>
+        <td>Crear, editar, eliminar, buscar</td>
+    </tr>
+    <tr>
+        <td>Servicios</td>
+        <td>Crear, editar, listar por categoría</td>
+    </tr>
+    <tr>
+        <td>Profesionales</td>
+        <td>Crear, editar, activar/desactivar</td>
+    </tr>
+    <tr>
+        <td>Recursos</td>
+        <td>Crear, editar, asignar tipo</td>
+    </tr>
+    <tr>
+        <td>Turnos</td>
+        <td>Crear, iniciar, completar, cancelar</td>
+    </tr>
+    <tr>
+        <td>Ventas</td>
+        <td>Ver historial, filtrar por fecha, servicio y/o profesional</td>
+    </tr>
+</table>
+
+<h2>Atajos del Teclado</h2>
+
+<ul>
+    <li><strong>Ctrl + S</strong>: Guardar cambios en formularios</li>
+    <li><strong>Esc</strong>: Cerrar ventanas modales</li>
+    <li><strong>F5</strong>: Actualizar la página</li>
+</ul>
+
+<div class="destacado">
+    <strong>¡Listo para usar!</strong> Con estos conocimientos básicos, ya puedes comenzar a gestionar tu salón de manera profesional.
+</div>
+
+<div class="footer">
+    <p>Manual de Usuario - Sistema de Gestión Peluquería</p>
+    <p>Versión 1.0 - 2026. Desarrollado por Javier Gottig</p>
+</div>
+
+</body>
+</html>

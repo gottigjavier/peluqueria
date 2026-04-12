@@ -7,6 +7,7 @@ export default function Clients() {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', notes: '' });
   const [editingId, setEditingId] = useState(null);
+  const [filter, setFilter] = useState('');
 
   useEffect(() => {
     loadClients();
@@ -56,6 +57,15 @@ export default function Clients() {
       </div>
 
       <div className="card overflow-hidden">
+        <div className="p-4 border-b border-[var(--color-border)]">
+          <input 
+            type="text" 
+            placeholder="Buscar por nombre o teléfono..." 
+            value={filter} 
+            onChange={e => setFilter(e.target.value)} 
+            className="input w-full"
+          />
+        </div>
         <table className="w-full">
           <thead className="bg-[var(--color-bg)]">
             <tr>
@@ -66,7 +76,7 @@ export default function Clients() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
-            {clients.map(client => (
+            {clients.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()) || (c.phone && c.phone.includes(filter))).map(client => (
               <tr key={client.id} className="hover:bg-[var(--color-bg)]">
                 <td className="px-6 py-4 font-medium">{client.name}</td>
                 <td className="px-6 py-4 text-[var(--color-text-secondary)]">{client.email || '-'}</td>
