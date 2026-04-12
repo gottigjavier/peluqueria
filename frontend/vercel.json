@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/v1/(.*)",
+      "destination": "https://salon-api-nx06.onrender.com/api/v1/$1"
+    }
+  ]
+}
