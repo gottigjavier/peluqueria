@@ -1,21 +1,27 @@
+import { Outlet, NavLink } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
-import { Sun, Moon, Menu, X } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { Sun, Moon, Menu, X, LogOut } from 'lucide-react';
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
 
-const navItems = [
-  { path: '/', label: 'Dashboard', icon: '📊' },
-  { path: '/clients', label: 'Clientes', icon: '👥' },
-  { path: '/appointments', label: 'Turnos', icon: '📅' },
-  { path: '/services', label: 'Servicios', icon: '✂️' },
-  { path: '/professionals', label: 'Profesionales', icon: '👩‍💼' },
-  { path: '/resources', label: 'Recursos', icon: '🪑' },
-  { path: '/sales', label: 'Ventas', icon: '💰' },
+const allNavItems = [
+  { path: '/', label: 'Dashboard', icon: '📊', roles: ['admin', 'user'] },
+  { path: '/clients', label: 'Clientes', icon: '👥', roles: ['admin'] },
+  { path: '/appointments', label: 'Turnos', icon: '📅', roles: ['admin', 'user'] },
+  { path: '/services', label: 'Servicios', icon: '✂️', roles: ['admin'] },
+  { path: '/professionals', label: 'Profesionales', icon: '👩‍💼', roles: ['admin'] },
+  { path: '/resources', label: 'Recursos', icon: '🪑', roles: ['admin'] },
+  { path: '/sales', label: 'Ventas', icon: '💰', roles: ['admin'] },
 ];
 
-export default function Layout({ children }) {
+export default function Layout() {
   const { isDark, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const navItems = allNavItems.filter(
+    item => user && item.roles.includes(user.role)
+  );
 
   return (
     <div className="min-h-screen flex">
@@ -37,6 +43,15 @@ export default function Layout({ children }) {
             </NavLink>
           ))}
         </nav>
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[var(--color-border)]">
+          <button
+            onClick={logout}
+            className="flex items-center gap-3 px-4 py-3 rounded-lg w-full text-[var(--color-text-secondary)] hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>Cerrar Sesión</span>
+          </button>
+        </div>
       </aside>
 
       {sidebarOpen && (
@@ -49,13 +64,16 @@ export default function Layout({ children }) {
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-4 ml-auto">
+            <span className="text-sm text-[var(--color-text-secondary)] hidden sm:block">
+              {user?.username}
+            </span>
             <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-[var(--color-border)] transition-colors">
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
           </div>
         </header>
         <main className="p-6">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>

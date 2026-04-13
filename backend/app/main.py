@@ -1,15 +1,49 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import routers
-from app.core.database import engine, Base
+from app.routers import routers, auth
+from app.core.database import engine, Base, SessionLocal
 from app.models import models
+from app.core.security import get_password_hash
+from app.models.models import User
 
-models.Base.metadata.create_all(bind=engine)
+
+def seed_initial_users():
+    db = SessionLocal()
+    try:
+        if not db.query(User).filter(User.username == "admin").first():
+            db.add(
+                User(
+                    username="admin",
+                    hashed_password=get_password_hash("stegmann13"),
+                    role="admin",
+                )
+            )
+        if not db.query(User).filter(User.username == "user").first():
+            db.add(
+                User(
+                    username="user",
+                    hashed_password=get_password_hash("stegmann"),
+                    role="user",
+                )
+            )
+        db.commit()
+    finally:
+        db.close()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    seed_initial_users()
+    yield
+
 
 app = FastAPI(
     title="Salon Management API",
     description="API para gestión integral de servicios de estética",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -21,6 +55,7 @@ app.add_middleware(
 )
 
 app.include_router(routers.router, prefix="/api/v1", tags=["API"])
+app.include_router(auth.router, prefix="/api/v1", tags=["Authentication"])
 
 
 @app.get("/")

@@ -4,6 +4,7 @@ from sqlalchemy import and_, or_
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from app.core.database import get_db
+from app.core.dependencies import get_current_user, require_admin
 from app.services import services
 from app.models.models import (
     Professional,
@@ -37,18 +38,24 @@ from app.schemas.schemas import (
 )
 from datetime import datetime
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.post(
     "/clients", response_model=ClientResponse, status_code=status.HTTP_201_CREATED
 )
-def create_client(client: ClientCreate, db: Session = Depends(get_db)):
+def create_client(
+    client: ClientCreate,
+    db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
+):
     return services.create_client(db, client)
 
 
 @router.get("/clients", response_model=list[ClientResponse])
-def get_clients(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_clients(
+    skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
+):
     return services.get_clients(db, skip, limit)
 
 
@@ -61,7 +68,12 @@ def get_client(client_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/clients/{client_id}", response_model=ClientResponse)
-def update_client(client_id: int, client: ClientUpdate, db: Session = Depends(get_db)):
+def update_client(
+    client_id: int,
+    client: ClientUpdate,
+    db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
+):
     updated = services.update_client(db, client_id, client)
     if not updated:
         raise HTTPException(status_code=404, detail="Client not found")
@@ -69,7 +81,11 @@ def update_client(client_id: int, client: ClientUpdate, db: Session = Depends(ge
 
 
 @router.delete("/clients/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_client(client_id: int, db: Session = Depends(get_db)):
+def delete_client(
+    client_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
+):
     if not services.delete_client(db, client_id):
         raise HTTPException(status_code=404, detail="Client not found")
 
@@ -77,7 +93,11 @@ def delete_client(client_id: int, db: Session = Depends(get_db)):
 @router.post(
     "/services", response_model=ServiceResponse, status_code=status.HTTP_201_CREATED
 )
-def create_service(service: ServiceCreate, db: Session = Depends(get_db)):
+def create_service(
+    service: ServiceCreate,
+    db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
+):
     return services.create_service(db, service)
 
 
@@ -101,7 +121,10 @@ def get_service(service_id: int, db: Session = Depends(get_db)):
 
 @router.put("/services/{service_id}", response_model=ServiceResponse)
 def update_service(
-    service_id: int, service: ServiceUpdate, db: Session = Depends(get_db)
+    service_id: int,
+    service: ServiceUpdate,
+    db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
 ):
     updated = services.update_service(db, service_id, service)
     if not updated:
@@ -110,7 +133,11 @@ def update_service(
 
 
 @router.delete("/services/{service_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_service(service_id: int, db: Session = Depends(get_db)):
+def delete_service(
+    service_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
+):
     if not services.delete_service(db, service_id):
         raise HTTPException(status_code=404, detail="Service not found")
 
@@ -118,7 +145,11 @@ def delete_service(service_id: int, db: Session = Depends(get_db)):
 @router.post(
     "/resources", response_model=ResourceResponse, status_code=status.HTTP_201_CREATED
 )
-def create_resource(resource: ResourceCreate, db: Session = Depends(get_db)):
+def create_resource(
+    resource: ResourceCreate,
+    db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
+):
     return services.create_resource(db, resource)
 
 
@@ -137,7 +168,10 @@ def get_resource(resource_id: int, db: Session = Depends(get_db)):
 
 @router.put("/resources/{resource_id}", response_model=ResourceResponse)
 def update_resource(
-    resource_id: int, resource: ResourceUpdate, db: Session = Depends(get_db)
+    resource_id: int,
+    resource: ResourceUpdate,
+    db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
 ):
     updated = services.update_resource(db, resource_id, resource)
     if not updated:
@@ -151,17 +185,23 @@ def update_resource(
     status_code=status.HTTP_201_CREATED,
 )
 def create_professional(
-    professional: ProfessionalCreate, db: Session = Depends(get_db)
+    professional: ProfessionalCreate,
+    db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
 ):
     return services.create_professional(db, professional)
 
 
 @router.get("/professionals", response_model=list[ProfessionalResponse])
-def get_professionals(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_professionals(
+    skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
+):
     return services.get_professionals(db, skip, limit)
 
 
-@router.get("/professionals/{professional_id}", response_model=ProfessionalResponse)
+@router.get(
+    "/professionals/{professional_id}", response_model=ProfessionalResponse
+)
 def get_professional(professional_id: int, db: Session = Depends(get_db)):
     professional = services.get_professional_by_id(db, professional_id)
     if not professional:
@@ -169,11 +209,14 @@ def get_professional(professional_id: int, db: Session = Depends(get_db)):
     return professional
 
 
-@router.put("/professionals/{professional_id}", response_model=ProfessionalResponse)
+@router.put(
+    "/professionals/{professional_id}", response_model=ProfessionalResponse
+)
 def update_professional(
     professional_id: int,
     professional: ProfessionalUpdate,
     db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
 ):
     updated = services.update_professional(db, professional_id, professional)
     if not updated:
@@ -186,7 +229,9 @@ def update_professional(
     response_model=AppointmentResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_appointment(appointment: AppointmentCreate, db: Session = Depends(get_db)):
+def create_appointment(
+    appointment: AppointmentCreate, db: Session = Depends(get_db)
+):
     created = services.create_appointment(db, appointment)
     if not created:
         raise HTTPException(
@@ -210,7 +255,9 @@ def get_appointments(
     )
 
 
-@router.get("/appointments/{appointment_id}", response_model=AppointmentDetailResponse)
+@router.get(
+    "/appointments/{appointment_id}", response_model=AppointmentDetailResponse
+)
 def get_appointment(appointment_id: int, db: Session = Depends(get_db)):
     appointment = services.get_appointment_by_id(db, appointment_id)
     if not appointment:
@@ -218,9 +265,13 @@ def get_appointment(appointment_id: int, db: Session = Depends(get_db)):
     return appointment
 
 
-@router.put("/appointments/{appointment_id}", response_model=AppointmentResponse)
+@router.put(
+    "/appointments/{appointment_id}", response_model=AppointmentResponse
+)
 def update_appointment(
-    appointment_id: int, appointment: AppointmentUpdate, db: Session = Depends(get_db)
+    appointment_id: int,
+    appointment: AppointmentUpdate,
+    db: Session = Depends(get_db),
 ):
     existing = services.get_appointment_by_id(db, appointment_id)
     if not existing:
@@ -234,13 +285,17 @@ def update_appointment(
     return updated
 
 
-@router.delete("/appointments/{appointment_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/appointments/{appointment_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 def cancel_appointment(appointment_id: int, db: Session = Depends(get_db)):
     if not services.cancel_appointment(db, appointment_id):
         raise HTTPException(status_code=404, detail="Appointment not found")
 
 
-@router.post("/appointments/{appointment_id}/start", response_model=AppointmentResponse)
+@router.post(
+    "/appointments/{appointment_id}/start", response_model=AppointmentResponse
+)
 def start_appointment(appointment_id: int, db: Session = Depends(get_db)):
     started = services.start_appointment(db, appointment_id)
     if not started:
@@ -288,7 +343,8 @@ def check_available_services(request: dict, db: Session = Depends(get_db)):
                 or_(
                     and_(
                         Appointment.start_time
-                        < start_time_utc + timedelta(minutes=service.duration_minutes),
+                        < start_time_utc
+                        + timedelta(minutes=service.duration_minutes),
                         Appointment.end_time > start_time_utc,
                     )
                 ),
@@ -309,7 +365,9 @@ def check_available_services(request: dict, db: Session = Depends(get_db)):
 
 
 @router.post("/appointments/check-professionals", response_model=dict)
-def check_available_professionals(request: dict, db: Session = Depends(get_db)):
+def check_available_professionals(
+    request: dict, db: Session = Depends(get_db)
+):
     from app.utils.timezone_utils import parse_datetime_aware, to_utc
 
     start_time_str = request.get("start_time")
@@ -362,7 +420,9 @@ def check_available_professionals(request: dict, db: Session = Depends(get_db)):
 
 
 @router.post("/appointments/check-availability", response_model=dict)
-def check_appointment_availability(request: dict, db: Session = Depends(get_db)):
+def check_appointment_availability(
+    request: dict, db: Session = Depends(get_db)
+):
     from app.utils.timezone_utils import parse_datetime_aware
 
     start_time_str = request.get("start_time")
@@ -406,7 +466,8 @@ def check_appointment_availability(request: dict, db: Session = Depends(get_db))
                 or_(
                     and_(
                         Appointment.start_time
-                        < start_time + timedelta(minutes=service.duration_minutes),
+                        < start_time
+                        + timedelta(minutes=service.duration_minutes),
                         Appointment.end_time > start_time,
                     )
                 ),
@@ -459,13 +520,15 @@ def check_appointment_availability(request: dict, db: Session = Depends(get_db))
 
 
 @router.post(
-    "/appointments/{appointment_id}/complete", response_model=AppointmentResponse
+    "/appointments/{appointment_id}/complete",
+    response_model=AppointmentResponse,
 )
 def complete_appointment(appointment_id: int, db: Session = Depends(get_db)):
     completed = services.complete_appointment(db, appointment_id)
     if not completed:
         raise HTTPException(
-            status_code=404, detail="Appointment not found or cannot be completed"
+            status_code=404,
+            detail="Appointment not found or cannot be completed",
         )
 
     service = services.get_service_by_id(db, completed.service_id)
@@ -480,7 +543,9 @@ def complete_appointment(appointment_id: int, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
 )
 def create_before_after_photo(
-    photo: BeforeAfterPhotoCreate, db: Session = Depends(get_db)
+    photo: BeforeAfterPhotoCreate,
+    db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
 ):
     return services.add_before_after_photo(db, photo.model_dump())
 
@@ -504,7 +569,11 @@ def get_appointment_photos(appointment_id: int, db: Session = Depends(get_db)):
     response_model=InventoryLogResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_inventory_log(log: InventoryLogCreate, db: Session = Depends(get_db)):
+def create_inventory_log(
+    log: InventoryLogCreate,
+    db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
+):
     return services.add_inventory_log(db, log.model_dump())
 
 
@@ -547,7 +616,9 @@ def get_total_sales(db: Session = Depends(get_db)):
 
 
 @router.get("/sales/all", response_model=list)
-def get_all_sales(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_all_sales(
+    skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
+):
     return services.get_sales(db, skip, limit)
 
 
@@ -565,7 +636,12 @@ def get_completed_appointments(
 
 
 @router.put("/sales/{sale_id}", response_model=dict)
-def update_sale_amount(sale_id: int, request: dict, db: Session = Depends(get_db)):
+def update_sale_amount(
+    sale_id: int,
+    request: dict,
+    db: Session = Depends(get_db),
+    _admin=Depends(require_admin),
+):
     amount = request.get("amount")
     if amount is None:
         raise HTTPException(status_code=400, detail="amount is required")
