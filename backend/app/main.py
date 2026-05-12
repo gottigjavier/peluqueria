@@ -3,9 +3,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import routers, auth
 from app.core.database import engine, Base, SessionLocal
-from app.models import models
 from app.core.security import get_password_hash
 from app.models.models import User
+from app.core.config import settings
 
 
 def seed_initial_users():
@@ -56,7 +56,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
