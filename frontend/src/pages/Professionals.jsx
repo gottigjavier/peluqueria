@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { professionalsApi } from '../hooks/useApi';
+import { useAuth } from '../contexts/AuthContext';
 import { Plus, Edit } from 'lucide-react';
 
 export default function Professionals() {
+  const { user } = useAuth();
   const [professionals, setProfessionals] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', specialty: '' });
   const [editingId, setEditingId] = useState(null);
+  const canEdit = user?.role !== 'guest';
 
   useEffect(() => { loadProfessionals(); }, []);
   const loadProfessionals = () => professionalsApi.getAll().then(res => setProfessionals(res.data)).catch(console.error);
@@ -26,13 +29,17 @@ export default function Professionals() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Profesionales</h1>
-        <button onClick={() => { setShowModal(true); setEditingId(null); setFormData({ name: '', specialty: '' }); }} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Nuevo</button>
+        {canEdit && (
+          <button onClick={() => { setShowModal(true); setEditingId(null); setFormData({ name: '', specialty: '' }); }} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Nuevo</button>
+        )}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {professionals.map(p => (
           <div key={p.id} className="card p-4 flex items-center justify-between">
             <div><h3 className="font-semibold">{p.name}</h3><p className="text-sm text-[var(--color-text-secondary)]">{p.specialty || 'Sin especialidad'}</p></div>
-            <button onClick={() => handleEdit(p)} className="p-2 hover:bg-[var(--color-border)] rounded"><Edit className="w-4 h-4" /></button>
+            {canEdit && (
+              <button onClick={() => handleEdit(p)} className="p-2 hover:bg-[var(--color-border)] rounded"><Edit className="w-4 h-4" /></button>
+            )}
           </div>
         ))}
         {professionals.length === 0 && <p className="text-center text-[var(--color-text-secondary)] col-span-full py-8">No hay profesionales</p>}

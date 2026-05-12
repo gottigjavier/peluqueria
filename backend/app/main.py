@@ -27,6 +27,14 @@ def seed_initial_users():
                     role="user",
                 )
             )
+        if not db.query(User).filter(User.username == "guest").first():
+            db.add(
+                User(
+                    username="guest",
+                    hashed_password=get_password_hash("password"),
+                    role="guest",
+                )
+            )
         db.commit()
     finally:
         db.close()

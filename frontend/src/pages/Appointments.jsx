@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import { appointmentsApi, clientsApi, servicesApi, professionalsApi, resourcesApi } from '../hooks/useApi';
+import { useAuth } from '../contexts/AuthContext';
 import { Plus, Check, X, Edit, Eye, Play } from 'lucide-react';
 import { formatDateTime, formatTime } from '../utils/dateUtils';
 
 export default function Appointments() {
+  const { user } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [detailAppointment, setDetailAppointment] = useState(null);
+  const canEdit = user?.role !== 'guest';
   const [formData, setFormData] = useState({ client_id: '', service_id: '', professional_id: '', start_date: '', start_time: '', notes: '' });
   const [clients, setClients] = useState([]);
   const [services, setServices] = useState([]);
@@ -178,9 +181,11 @@ setFormData({ client_id: '', service_id: '', professional_id: '', start_date: ''
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Turnos</h1>
-        <button onClick={() => { setEditingAppointment(null); setFormData({ client_id: '', service_id: '', professional_id: '', start_date: '', start_time: '', notes: '' }); setAvailabilityChecked(false); setFilteredServices([]); setFilteredProfessionals([]); setSelectedService(null); setClientFilter(''); setShowModal(true); }} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Nuevo Turno
-        </button>
+        {canEdit && (
+          <button onClick={() => { setEditingAppointment(null); setFormData({ client_id: '', service_id: '', professional_id: '', start_date: '', start_time: '', notes: '' }); setAvailabilityChecked(false); setFilteredServices([]); setFilteredProfessionals([]); setSelectedService(null); setClientFilter(''); setShowModal(true); }} className="btn-primary flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Nuevo Turno
+          </button>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -198,14 +203,14 @@ setFormData({ client_id: '', service_id: '', professional_id: '', start_date: ''
             </div>
             <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
               <span className={`px-3 py-1 rounded-full text-xs ${getStatusColor(apt.status)}`}>{apt.status === 'in_progress' ? 'En curso' : apt.status === 'pending' ? 'Pendiente' : apt.status === 'completed' ? 'Completado' : apt.status === 'cancelled' ? 'Cancelado' : apt.status}</span>
-              {apt.status === 'pending' && (
+              {canEdit && apt.status === 'pending' && (
                 <>
                   <button onClick={() => handleEdit(apt)} className="p-2 bg-blue-100 dark:bg-blue-900 rounded text-blue-600"><Edit className="w-4 h-4" /></button>
                   <button onClick={() => handleStart(apt.id)} className="p-2 bg-purple-100 dark:bg-purple-900 rounded text-purple-600" title="Iniciar turno"><Play className="w-4 h-4" /></button>
                   <button onClick={() => handleCancel(apt.id)} className="p-2 bg-red-100 dark:bg-red-900 rounded text-red-600" title="Cancelar turno"><X className="w-4 h-4" /></button>
                 </>
               )}
-              {apt.status === 'in_progress' && (
+              {canEdit && apt.status === 'in_progress' && (
                 <>
                   <button onClick={() => handleComplete(apt.id)} className="p-2 bg-green-100 dark:bg-green-900 rounded text-green-600" title="Completar turno"><Check className="w-4 h-4" /></button>
                   <button onClick={() => handleCancel(apt.id)} className="p-2 bg-red-100 dark:bg-red-900 rounded text-red-600" title="Cancelar turno"><X className="w-4 h-4" /></button>
@@ -421,9 +426,11 @@ setFormData({ client_id: '', service_id: '', professional_id: '', start_date: ''
             </div>
             
             <div className="flex gap-3 mt-6">
-              <button onClick={() => { setShowDetailModal(false); handleEdit(detailAppointment); }} className="btn-secondary flex-1 flex items-center justify-center gap-2">
-                <Edit className="w-4 h-4" /> Editar
-              </button>
+              {canEdit && (
+                <button onClick={() => { setShowDetailModal(false); handleEdit(detailAppointment); }} className="btn-secondary flex-1 flex items-center justify-center gap-2">
+                  <Edit className="w-4 h-4" /> Editar
+                </button>
+              )}
               <button onClick={() => setShowDetailModal(false)} className="btn-primary flex-1">Cerrar</button>
             </div>
           </div>

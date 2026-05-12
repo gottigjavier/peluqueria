@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { clientsApi } from '../hooks/useApi';
+import { useAuth } from '../contexts/AuthContext';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 
 export default function Clients() {
+  const { user } = useAuth();
   const [clients, setClients] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', notes: '' });
   const [editingId, setEditingId] = useState(null);
   const [filter, setFilter] = useState('');
+  const canEdit = user?.role !== 'guest';
 
   useEffect(() => {
     loadClients();
@@ -51,9 +54,11 @@ export default function Clients() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Clientes</h1>
-        <button onClick={() => { setShowModal(true); setEditingId(null); setFormData({ name: '', email: '', phone: '', notes: '' }); }} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Nuevo Cliente
-        </button>
+        {canEdit && (
+          <button onClick={() => { setShowModal(true); setEditingId(null); setFormData({ name: '', email: '', phone: '', notes: '' }); }} className="btn-primary flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Nuevo Cliente
+          </button>
+        )}
       </div>
 
       <div className="card overflow-hidden">
@@ -82,12 +87,16 @@ export default function Clients() {
                 <td className="px-6 py-4 text-[var(--color-text-secondary)]">{client.email || '-'}</td>
                 <td className="px-6 py-4">{client.phone}</td>
                 <td className="px-6 py-4 text-right">
-                  <button onClick={() => handleEdit(client)} className="p-2 hover:bg-[var(--color-border)] rounded mr-2">
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => handleDelete(client.id)} className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded text-red-500">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {canEdit && (
+                    <>
+                      <button onClick={() => handleEdit(client)} className="p-2 hover:bg-[var(--color-border)] rounded mr-2">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(client.id)} className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded text-red-500">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
             ))}

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { salesApi, servicesApi, professionalsApi } from '../hooks/useApi';
+import { useAuth } from '../contexts/AuthContext';
 import { formatTime } from '../utils/dateUtils';
 
 export default function Sales() {
+  const { user } = useAuth();
   const [sales, setSales] = useState([]);
   const [services, setServices] = useState([]);
   const [professionals, setProfessionals] = useState([]);
+  const canEdit = user?.role !== 'guest';
   const [filters, setFilters] = useState({
     start_date: new Date().toISOString().split('T')[0],
     end_date: new Date().toISOString().split('T')[0],
@@ -141,11 +144,10 @@ export default function Sales() {
                   <td className="px-4 py-3 text-right">
                     <input
                       type="text"
-                      //type="number"
-                      //step="100"
                       defaultValue={sale.amount}
-                      onBlur={(e) => handleEditAmount(sale, parseFloat(e.target.value))}
+                      onBlur={(e) => canEdit && handleEditAmount(sale, parseFloat(e.target.value))}
                       className="input w-24 text-right"
+                      readOnly={!canEdit}
                     />
                   </td>
                 </tr>

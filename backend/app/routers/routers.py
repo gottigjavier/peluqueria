@@ -4,7 +4,7 @@ from sqlalchemy import and_, or_
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, require_admin
+from app.core.dependencies import get_current_user, require_admin, require_write_role
 from app.services import services
 from app.models.models import (
     Professional,
@@ -47,6 +47,7 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 def create_client(
     client: ClientCreate,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
     _admin=Depends(require_admin),
 ):
     return services.create_client(db, client)
@@ -72,6 +73,7 @@ def update_client(
     client_id: int,
     client: ClientUpdate,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
     _admin=Depends(require_admin),
 ):
     updated = services.update_client(db, client_id, client)
@@ -84,6 +86,7 @@ def update_client(
 def delete_client(
     client_id: int,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
     _admin=Depends(require_admin),
 ):
     if not services.delete_client(db, client_id):
@@ -96,6 +99,7 @@ def delete_client(
 def create_service(
     service: ServiceCreate,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
     _admin=Depends(require_admin),
 ):
     return services.create_service(db, service)
@@ -124,6 +128,7 @@ def update_service(
     service_id: int,
     service: ServiceUpdate,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
     _admin=Depends(require_admin),
 ):
     updated = services.update_service(db, service_id, service)
@@ -136,6 +141,7 @@ def update_service(
 def delete_service(
     service_id: int,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
     _admin=Depends(require_admin),
 ):
     if not services.delete_service(db, service_id):
@@ -148,6 +154,7 @@ def delete_service(
 def create_resource(
     resource: ResourceCreate,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
     _admin=Depends(require_admin),
 ):
     return services.create_resource(db, resource)
@@ -171,6 +178,7 @@ def update_resource(
     resource_id: int,
     resource: ResourceUpdate,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
     _admin=Depends(require_admin),
 ):
     updated = services.update_resource(db, resource_id, resource)
@@ -187,6 +195,7 @@ def update_resource(
 def create_professional(
     professional: ProfessionalCreate,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
     _admin=Depends(require_admin),
 ):
     return services.create_professional(db, professional)
@@ -216,6 +225,7 @@ def update_professional(
     professional_id: int,
     professional: ProfessionalUpdate,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
     _admin=Depends(require_admin),
 ):
     updated = services.update_professional(db, professional_id, professional)
@@ -230,7 +240,9 @@ def update_professional(
     status_code=status.HTTP_201_CREATED,
 )
 def create_appointment(
-    appointment: AppointmentCreate, db: Session = Depends(get_db)
+    appointment: AppointmentCreate,
+    db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
 ):
     created = services.create_appointment(db, appointment)
     if not created:
@@ -272,6 +284,7 @@ def update_appointment(
     appointment_id: int,
     appointment: AppointmentUpdate,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
 ):
     existing = services.get_appointment_by_id(db, appointment_id)
     if not existing:
@@ -288,7 +301,11 @@ def update_appointment(
 @router.delete(
     "/appointments/{appointment_id}", status_code=status.HTTP_204_NO_CONTENT
 )
-def cancel_appointment(appointment_id: int, db: Session = Depends(get_db)):
+def cancel_appointment(
+    appointment_id: int,
+    db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
+):
     if not services.cancel_appointment(db, appointment_id):
         raise HTTPException(status_code=404, detail="Appointment not found")
 
@@ -296,7 +313,11 @@ def cancel_appointment(appointment_id: int, db: Session = Depends(get_db)):
 @router.post(
     "/appointments/{appointment_id}/start", response_model=AppointmentResponse
 )
-def start_appointment(appointment_id: int, db: Session = Depends(get_db)):
+def start_appointment(
+    appointment_id: int,
+    db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
+):
     started = services.start_appointment(db, appointment_id)
     if not started:
         raise HTTPException(status_code=404, detail="Appointment not found")
@@ -523,7 +544,11 @@ def check_appointment_availability(
     "/appointments/{appointment_id}/complete",
     response_model=AppointmentResponse,
 )
-def complete_appointment(appointment_id: int, db: Session = Depends(get_db)):
+def complete_appointment(
+    appointment_id: int,
+    db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
+):
     completed = services.complete_appointment(db, appointment_id)
     if not completed:
         raise HTTPException(
@@ -545,6 +570,7 @@ def complete_appointment(appointment_id: int, db: Session = Depends(get_db)):
 def create_before_after_photo(
     photo: BeforeAfterPhotoCreate,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
     _admin=Depends(require_admin),
 ):
     return services.add_before_after_photo(db, photo.model_dump())
@@ -572,6 +598,7 @@ def get_appointment_photos(appointment_id: int, db: Session = Depends(get_db)):
 def create_inventory_log(
     log: InventoryLogCreate,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
     _admin=Depends(require_admin),
 ):
     return services.add_inventory_log(db, log.model_dump())
@@ -640,6 +667,7 @@ def update_sale_amount(
     sale_id: int,
     request: dict,
     db: Session = Depends(get_db),
+    _write=Depends(require_write_role),
     _admin=Depends(require_admin),
 ):
     amount = request.get("amount")
